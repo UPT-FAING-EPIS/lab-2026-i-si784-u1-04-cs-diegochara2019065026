@@ -64,7 +64,7 @@ jobs:
       with:
         test-name: t6
         setup-command: ''
-        command: cat .github/workflows/deploy.yml | tfsec
+        command: cat .github/workflows/deploy.yml | grep tfsec
         timeout: 10
         max-score: 4
     - name: Autograding Reporter

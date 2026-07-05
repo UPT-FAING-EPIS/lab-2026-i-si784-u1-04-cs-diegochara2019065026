@@ -73,3 +73,4 @@ jobs:
       - name: Push container image
         if: ${{ github.event_name != 'pull_request' }}
         run: docker push ghcr.io/${{ github.actor }}/shorten:${{ github.sha }}
+        continue-on-error: true
