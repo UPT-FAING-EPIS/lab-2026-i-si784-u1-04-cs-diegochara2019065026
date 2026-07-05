@@ -11,6 +11,10 @@ on:
 jobs:
   validate-infra:
     runs-on: ubuntu-latest
+    env:
+      SUSCRIPTION_ID: ${{ secrets.SUSCRIPTION_ID }}
+      SQL_USER: ${{ secrets.SQL_USER }}
+      SQL_PASS: ${{ secrets.SQL_PASS }}
 
     steps:
       - name: Checkout
@@ -38,14 +42,14 @@ jobs:
         run: terraform -chdir=infra validate -no-color
 
       - name: Terraform Plan optional
-        if: ${{ secrets.SUSCRIPTION_ID != '' && secrets.SQL_USER != '' && secrets.SQL_PASS != '' }}
+        if: ${{ env.SUSCRIPTION_ID != '' && env.SQL_USER != '' && env.SQL_PASS != '' }}
         run: |
           terraform -chdir=infra plan \
-            -var="suscription_id=${{ secrets.SUSCRIPTION_ID }}" \
-            -var="sqladmin_username=${{ secrets.SQL_USER }}" \
-            -var="sqladmin_password=${{ secrets.SQL_PASS }}" \
+            -var="suscription_id=${SUSCRIPTION_ID}" \
+            -var="sqladmin_username=${SQL_USER}" \
+            -var="sqladmin_password=${SQL_PASS}" \
             -no-color
 
       - name: Azure deployment skipped
-        if: ${{ secrets.SUSCRIPTION_ID == '' || secrets.SQL_USER == '' || secrets.SQL_PASS == '' }}
+        if: ${{ env.SUSCRIPTION_ID == '' || env.SQL_USER == '' || env.SQL_PASS == '' }}
         run: echo "Azure deployment skipped because Azure secrets are not configured." >> "$GITHUB_STEP_SUMMARY"
