@@ -1,0 +1,75 @@
+name: Construccion y despliegue Shorten
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "Shorten/**"
+      - ".github/workflows/ci-cd.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  DOTNET_VERSION: "8.x"
+  SONAR_ORG: ${{ vars.SONAR_ORG || 'diegochara2019065026' }}
+  SONAR_PROJECT: ${{ vars.SONAR_PROJECT || 'diegochara2019065026_shorten_iac' }}
+  SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        name: Checkout
+
+      - name: Setup Java for sonar
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Install sonar scanner
+        run: dotnet tool install -g dotnet-sonarscanner
+
+      - name: Start sonar analysis
+        if: ${{ env.SONAR_TOKEN != '' }}
+        run: |
+          dotnet-sonarscanner begin \
+            /k:"${{ env.SONAR_PROJECT }}" \
+            /o:"${{ env.SONAR_ORG }}" \
+            /d:sonar.token="${SONAR_TOKEN}" \
+            /d:sonar.host.url="https://sonarcloud.io"
+
+      - name: Restore, build and test
+        run: |
+          dotnet restore Shorten/Shorten.sln
+          dotnet build Shorten/Shorten.sln --configuration Release --no-restore
+          dotnet test Shorten/Shorten.sln --configuration Release --no-build
+
+      - name: End sonar analysis
+        if: ${{ env.SONAR_TOKEN != '' }}
+        run: dotnet-sonarscanner end /d:sonar.token="${SONAR_TOKEN}"
+
+      - name: Build container image
+        run: docker build -t ghcr.io/${{ github.actor }}/shorten:${{ github.sha }} .
+
+      - name: Login to GitHub Container Registry
+        if: ${{ github.event_name != 'pull_request' }}
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push container image
+        if: ${{ github.event_name != 'pull_request' }}
+        run: docker push ghcr.io/${{ github.actor }}/shorten:${{ github.sha }}

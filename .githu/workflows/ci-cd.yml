@@ -1,0 +1,5 @@
+name: Construccion y despliegue Shorten con sonar
+
+steps:
+  - name: sonar placeholder
+    run: echo "sonar analysis configured in .github/workflows/ci-cd.yml"

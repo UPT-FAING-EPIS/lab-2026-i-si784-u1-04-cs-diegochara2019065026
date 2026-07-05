@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Shorten</name>
+    </assembly>
+    <members>
+        <member name="T:Shorten.Areas.Domain.UrlMapping">
+            <summary>
+            Represents a shortened URL mapping.
+            </summary>
+        </member>
+        <member name="P:Shorten.Areas.Domain.UrlMapping.Id">
+            <summary>
+            Gets or sets the mapping identifier.
+            </summary>
+        </member>
+        <member name="P:Shorten.Areas.Domain.UrlMapping.OriginalUrl">
+            <summary>
+            Gets or sets the original long URL.
+            </summary>
+        </member>
+        <member name="P:Shorten.Areas.Domain.UrlMapping.ShortenedUrl">
+            <summary>
+            Gets or sets the shortened URL.
+            </summary>
+        </member>
+    </members>
+</doc>

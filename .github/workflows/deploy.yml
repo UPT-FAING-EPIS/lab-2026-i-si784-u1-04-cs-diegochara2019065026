@@ -1,0 +1,51 @@
+name: Construccion infraestructura en Azure
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "infra/**"
+      - ".github/workflows/deploy.yml"
+  workflow_dispatch:
+
+jobs:
+  validate-infra:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup tfsec
+        run: |
+          curl -L -o /tmp/tfsec.tar.gz "https://github.com/aquasecurity/tfsec/releases/download/v1.28.13/tfsec_1.28.13_linux_amd64.tar.gz"
+          tar -xzvf /tmp/tfsec.tar.gz -C /tmp
+          sudo mv /tmp/tfsec /usr/local/bin/tfsec
+          sudo chmod +x /usr/local/bin/tfsec
+
+      - name: tfsec
+        run: |
+          tfsec infra --soft-fail --format markdown --out infra/tfsec.md
+          cat infra/tfsec.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        run: terraform -chdir=infra init -backend=false
+
+      - name: Terraform Validate
+        run: terraform -chdir=infra validate -no-color
+
+      - name: Terraform Plan optional
+        if: ${{ secrets.SUSCRIPTION_ID != '' && secrets.SQL_USER != '' && secrets.SQL_PASS != '' }}
+        run: |
+          terraform -chdir=infra plan \
+            -var="suscription_id=${{ secrets.SUSCRIPTION_ID }}" \
+            -var="sqladmin_username=${{ secrets.SQL_USER }}" \
+            -var="sqladmin_password=${{ secrets.SQL_PASS }}" \
+            -no-color
+
+      - name: Azure deployment skipped
+        if: ${{ secrets.SUSCRIPTION_ID == '' || secrets.SQL_USER == '' || secrets.SQL_PASS == '' }}
+        run: echo "Azure deployment skipped because Azure secrets are not configured." >> "$GITHUB_STEP_SUMMARY"
